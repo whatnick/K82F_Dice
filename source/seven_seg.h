@@ -10,7 +10,7 @@
 
 void init_7seg();
 
-void display_num(char n);
+void display_num(uint8_t n);
 
 
 

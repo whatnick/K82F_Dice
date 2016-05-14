@@ -19,7 +19,7 @@ void init_7seg()
 	LED_SEG7_INIT(1);
 }
 
-void display_num(char n)
+void display_num(uint8_t n)
 {
 	if(n > 9) return;
 	if(n == 1)

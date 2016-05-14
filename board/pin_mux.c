@@ -55,4 +55,59 @@ void BOARD_InitPins(void)
     PORT_SetPinMux(PORTC, 11U, kPORT_MuxAsGpio); //SEG6
     PORT_SetPinMux(PORTC, 12U, kPORT_MuxAsGpio); //SEG7
 
+    port_pin_config_t pinConfig = {0};
+	port_pin_config_t ftmPinConfig = {0};
+
+	pinConfig.pullSelect = kPORT_PullUp;
+	pinConfig.mux = kPORT_MuxAlt4;
+	pinConfig.openDrainEnable = kPORT_OpenDrainEnable;
+
+	/* Ungate the port clock */
+	CLOCK_EnableClock(kCLOCK_PortA);
+
+	/* Release I2C bus */
+	BOARD_I2C_ReleaseBus();
+
+	/* PIN_MUX and I2C3_pull_up resistor setting */
+	PORT_SetPinConfig(PORTA, 1U, &pinConfig);
+	PORT_SetPinConfig(PORTA, 2U, &pinConfig);
+}
+
+void BOARD_I2C_ReleaseBus(void)
+{
+    port_pin_config_t i2c_pin_config = {0};
+    gpio_pin_config_t pin_config;
+    uint8_t i = 0;
+    uint8_t j = 0;
+
+    /* Config pin mux as gpio */
+    i2c_pin_config.pullSelect = kPORT_PullUp;
+    i2c_pin_config.mux = kPORT_MuxAsGpio;
+
+    pin_config.pinDirection = kGPIO_DigitalOutput;
+    pin_config.outputLogic = 1U;
+
+    PORT_SetPinConfig(PORTA, 1U, &i2c_pin_config);
+    PORT_SetPinConfig(PORTA, 2U, &i2c_pin_config);
+
+    GPIO_PinInit(GPIOA, 1U, &pin_config);
+    GPIO_PinInit(GPIOA, 2U, &pin_config);
+
+    /* Send 9 pulses on SCL and keep SDA high */
+    for (i = 0; i < 9; i++)
+    {
+        GPIO_WritePinOutput(GPIOA, 2U, 0U);
+        for (j = 0; j < 255; j++)
+        {
+            __asm("nop");
+        }
+        GPIO_WritePinOutput(GPIOA, 2U, 1U);
+        for (j = 0; j < 255; j++)
+        {
+            __asm("nop");
+        }
+    }
+    /* Send STOP */
+    GPIO_WritePinOutput(GPIOA, 2U, 1U);
+    GPIO_WritePinOutput(GPIOA, 1U, 1U);
 }

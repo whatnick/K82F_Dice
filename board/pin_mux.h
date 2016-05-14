@@ -43,6 +43,12 @@ extern "C" {
         */
 void BOARD_InitPins(void);
 
+/*!
+ * @brief Release I2C bus
+ *
+ */
+void BOARD_I2C_ReleaseBus(void);
+
 #if defined(__cplusplus)
 }
 #endif /* __cplusplus*/

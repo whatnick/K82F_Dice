@@ -39,34 +39,108 @@
 #include "fsl_debug_console.h"
 #include "seven_seg.h"
 
-void delay(void)
-{
-    volatile uint32_t i = 0;
-    for (i = 0; i < 800000; ++i)
-    {
-        __asm("NOP"); /* delay */
-    }
+#include "math.h"
+#include "fsl_fxos.h"
+#include "fsl_i2c.h"
+
+/*******************************************************************************
+ * Definitions
+ ******************************************************************************/
+/* I2C source clock */
+#define ACCEL_I2C_CLK_SRC I2C3_CLK_SRC
+#define I2C_BAUDRATE 100000U
+
+/*******************************************************************************
+ * Variables
+ ******************************************************************************/
+i2c_master_handle_t g_MasterHandle;
+/* FXOS device address */
+const uint8_t g_accel_address[] = { 0x1CU, 0x1DU, 0x1EU, 0x1FU };
+
+void delay(void) {
+	volatile uint32_t i = 0;
+	for (i = 0; i < 800000; ++i) {
+		__asm("NOP");
+		/* delay */
+	}
 }
 
 /*!
  * @brief Application entry point.
  */
 int main(void) {
-  /* Init board hardware. */
-  BOARD_InitPins();
-  BOARD_BootClockRUN();
-  BOARD_InitDebugConsole();
+	fxos_handle_t fxosHandle = { 0 };
+	fxos_data_t sensorData = { 0 };
+	i2c_master_config_t i2cConfig = { 0 };
+	uint32_t i2cSourceClock = 0;
+	int16_t xData = 0;
+	int16_t yData = 0;
+	int16_t zData = 0;
+	uint8_t i = 0;
+	uint8_t regResult = 0;
+	uint8_t array_addr_size = 0;
+	bool foundDevice = false;
 
-  /* Add your code here */
-  init_7seg();
+	i2cSourceClock = CLOCK_GetFreq(ACCEL_I2C_CLK_SRC);
+	fxosHandle.base = BOARD_ACCEL_I2C_BASEADDR;
+	fxosHandle.i2cHandle = &g_MasterHandle;
 
-  PRINTF("Hello World");
+	/* Init board hardware. */
+	BOARD_InitPins();
+	BOARD_BootClockRUN();
+	BOARD_InitDebugConsole();
 
-  for(;;) { /* Infinite loop to avoid leaving the main function */
-	  for(char i=0;i<10;i++)
-	  {
-		  delay();
-		  display_num(i);
-	  }
-  }
+	/*
+	 * i2cConfig.baudRate_Bps = 100000U;
+	 * i2cConfig.enableHighDrive = false;
+	 * i2cConfig.enableStopHold = false;
+	 * i2cConfig.glitchFilterWidth = 0U;
+	 * i2cConfig.enableMaster = true;
+	 */
+	I2C_MasterGetDefaultConfig(&i2cConfig);
+	I2C_MasterInit(BOARD_ACCEL_I2C_BASEADDR, &i2cConfig, i2cSourceClock);
+	I2C_MasterTransferCreateHandle(BOARD_ACCEL_I2C_BASEADDR, &g_MasterHandle,
+	NULL, NULL);
+
+	/* Find sensor devices */
+	array_addr_size = sizeof(g_accel_address) / sizeof(g_accel_address[0]);
+	for (i = 0; i < array_addr_size; i++) {
+		fxosHandle.xfer.slaveAddress = g_accel_address[i];
+		if (FXOS_ReadReg(&fxosHandle, WHO_AM_I_REG, &regResult, 1)
+				== kStatus_Success) {
+			foundDevice = true;
+			break;
+		}
+		if ((i == (array_addr_size - 1)) && (!foundDevice)) {
+			PRINTF("\r\nDo not found sensor device\r\n");
+			while (1) {
+			};
+		}
+	}
+
+	/* Init accelerometer sensor */
+	FXOS_Init(&fxosHandle);
+
+	/* Init 7 Segment Display */
+	init_7seg();
+
+	PRINTF("Accelerometer Entropy Dice");
+
+	for (;;) { /* Infinite loop to avoid leaving the main function */
+		/* Get new accelerometer data. */
+		FXOS_ReadSensorData(&fxosHandle, &sensorData);
+
+		/* Get the X and Y data from the sensor data structure.fxos_data */
+		xData = (int16_t) ((uint16_t) ((uint16_t) sensorData.accelXMSB << 8)
+				| (uint16_t) sensorData.accelXLSB);
+		yData = (int16_t) ((uint16_t) ((uint16_t) sensorData.accelYMSB << 8)
+				| (uint16_t) sensorData.accelYLSB);
+		zData = (int16_t) ((uint16_t) ((uint16_t) sensorData.accelZMSB << 8)
+						| (uint16_t) sensorData.accelZLSB);
+
+		/* Print out the raw accelerometer data. */
+		PRINTF("x= %d y = %d z = %d\r\n", xData, yData, zData);
+
+		display_num();
+	}
 }
