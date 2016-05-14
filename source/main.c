@@ -77,6 +77,7 @@ int main(void) {
 	int16_t yData = 0;
 	int16_t zData = 0;
 	uint8_t i = 0;
+	uint8_t dice_val = 0;
 	uint8_t regResult = 0;
 	uint8_t array_addr_size = 0;
 	bool foundDevice = false;
@@ -140,7 +141,12 @@ int main(void) {
 
 		/* Print out the raw accelerometer data. */
 		PRINTF("x= %d y = %d z = %d\r\n", xData, yData, zData);
+		//TODO: Add reasonable derivation of RNG for RAW Accel data
+		//Refer:http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=7109113
+		dice_val = ((sensorData.accelXLSB  & 10) + (sensorData.accelYLSB  & 10) + (sensorData.accelZLSB & 10))/3;
 
-		display_num();
+		display_num(dice_val);
+
+		delay();
 	}
 }
