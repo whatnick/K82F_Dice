@@ -49,7 +49,6 @@ void BOARD_InitPins(void)
     /* Led pin mux Configuration */
     PORT_SetPinMux(PORTC, 1U, kPORT_MuxAsGpio); //SEG1
     PORT_SetPinMux(PORTC, 2U, kPORT_MuxAsGpio); //SEG2
-
     PORT_SetPinMux(PORTC, 8U, kPORT_MuxAsGpio); //SEG3
     PORT_SetPinMux(PORTC, 9U, kPORT_MuxAsGpio); //SEG4
     PORT_SetPinMux(PORTC, 10U, kPORT_MuxAsGpio); //SEG5

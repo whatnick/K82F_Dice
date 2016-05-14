@@ -37,6 +37,7 @@
 #include "pin_mux.h"
 #include "clock_config.h"
 #include "fsl_debug_console.h"
+#include "seven_seg.h"
 
 void delay(void)
 {
@@ -57,44 +58,15 @@ int main(void) {
   BOARD_InitDebugConsole();
 
   /* Add your code here */
-  LED_RED_INIT(1);
-  LED_GREEN_INIT(1);
-  LED_BLUE_INIT(1);
-  LED_SEG1_INIT(1);
-  LED_SEG2_INIT(1);
-  LED_SEG3_INIT(1);
-  LED_SEG4_INIT(1);
+  init_7seg();
 
   PRINTF("Hello World");
 
   for(;;) { /* Infinite loop to avoid leaving the main function */
-	  delay();
-	  LED_RED_ON();
-	  delay();
-	  LED_RED_OFF();
-	  delay();
-	  LED_GREEN_ON();
-	  delay();
-	  LED_GREEN_OFF();
-	  delay();
-	  LED_BLUE_ON();
-	  delay();
-	  LED_BLUE_OFF();
-	  delay();
-	  LED_SEG1_ON();
-	  delay();
-	  LED_SEG1_OFF();
-	  delay();
-	  LED_SEG2_ON();
-	  delay();
-	  LED_SEG2_OFF();
-      delay();
-	  LED_SEG3_ON();
-	  delay();
-	  LED_SEG3_OFF();
-	  delay();
-	  LED_SEG4_ON();
-	  delay();
-	  LED_SEG4_OFF();
+	  for(char i=0;i<10;i++)
+	  {
+		  delay();
+		  display_num(i);
+	  }
   }
 }
