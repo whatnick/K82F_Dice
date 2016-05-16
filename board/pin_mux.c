@@ -56,7 +56,6 @@ void BOARD_InitPins(void)
     PORT_SetPinMux(PORTC, 12U, kPORT_MuxAsGpio); //SEG7
 
     port_pin_config_t pinConfig = {0};
-	port_pin_config_t ftmPinConfig = {0};
 
 	pinConfig.pullSelect = kPORT_PullUp;
 	pinConfig.mux = kPORT_MuxAlt4;

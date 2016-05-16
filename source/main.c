@@ -57,9 +57,10 @@ i2c_master_handle_t g_MasterHandle;
 /* FXOS device address */
 const uint8_t g_accel_address[] = { 0x1CU, 0x1DU, 0x1EU, 0x1FU };
 
-void delay(void) {
+void delay(uint8_t t) {
 	volatile uint32_t i = 0;
-	for (i = 0; i < 800000; ++i) {
+	volatile uint32_t delay_t = 800000*t;
+	for (i = 0; i < delay_t; ++i) {
 		__asm("NOP");
 		/* delay */
 	}
@@ -143,10 +144,14 @@ int main(void) {
 		PRINTF("x= %d y = %d z = %d\r\n", xData, yData, zData);
 		//TODO: Add reasonable derivation of RNG for RAW Accel data
 		//Refer:http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=7109113
-		dice_val = ((sensorData.accelXLSB  & 10) + (sensorData.accelYLSB  & 10) + (sensorData.accelZLSB & 10))/3;
+		dice_val = ((sensorData.accelXLSB  % 10) + (sensorData.accelYLSB  % 10) + (sensorData.accelZLSB % 10))/3;
 
-		display_num(dice_val);
-
-		delay();
+		/* Detect horizontal shake and display a value */
+		if(abs(xData) > 2000 || abs(yData) > 2000)
+		{
+			display_num(dice_val);
+			delay(10);
+			clear_display();
+		}
 	}
 }

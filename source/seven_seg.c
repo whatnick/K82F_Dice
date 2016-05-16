@@ -88,7 +88,7 @@ void display_num(uint8_t n)
 		LED_SEG2_OFF();
 		LED_SEG3_ON();
 		LED_SEG4_ON();
-		LED_SEG5_OFF();
+		LED_SEG5_ON();
 		LED_SEG6_OFF();
 		LED_SEG7_ON();
 	}
@@ -122,6 +122,17 @@ void display_num(uint8_t n)
 		LED_SEG6_OFF();
 		LED_SEG7_ON();
 	}
+}
+
+void clear_display()
+{
+	LED_SEG1_ON();
+	LED_SEG2_ON();
+	LED_SEG3_ON();
+	LED_SEG4_ON();
+	LED_SEG5_ON();
+	LED_SEG6_ON();
+	LED_SEG7_ON();
 }
 
 
