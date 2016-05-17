@@ -59,7 +59,7 @@ const uint8_t g_accel_address[] = { 0x1CU, 0x1DU, 0x1EU, 0x1FU };
 
 void delay(uint8_t t) {
 	volatile uint32_t i = 0;
-	volatile uint32_t delay_t = 800000*t;
+	volatile uint32_t delay_t = 800000 * t;
 	for (i = 0; i < delay_t; ++i) {
 		__asm("NOP");
 		/* delay */
@@ -138,20 +138,29 @@ int main(void) {
 		yData = (int16_t) ((uint16_t) ((uint16_t) sensorData.accelYMSB << 8)
 				| (uint16_t) sensorData.accelYLSB);
 		zData = (int16_t) ((uint16_t) ((uint16_t) sensorData.accelZMSB << 8)
-						| (uint16_t) sensorData.accelZLSB);
+				| (uint16_t) sensorData.accelZLSB);
 
 		/* Print out the raw accelerometer data. */
 		PRINTF("x= %d y = %d z = %d\r\n", xData, yData, zData);
-		//TODO: Add reasonable derivation of RNG for RAW Accel data
-		//Refer:http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=7109113
-		dice_val = ((sensorData.accelXLSB  % 10) + (sensorData.accelYLSB  % 10) + (sensorData.accelZLSB % 10))/3;
 
 		/* Detect horizontal shake and display a value */
-		if(abs(xData) > 2000 || abs(yData) > 2000)
-		{
-			display_num(dice_val);
-			delay(10);
+		if (abs(xData) > 2000 || abs(yData) > 2000) {
 			clear_display();
+
+			//TODO: Add reasonable derivation of RNG for RAW Accel data
+			//Refer:http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=7109113
+			FXOS_ReadSensorData(&fxosHandle, &sensorData);
+			dice_val = ((sensorData.accelXLSB & 15)
+					^ (sensorData.accelYLSB & 15) ^ (sensorData.accelZLSB & 15))
+					% 10;
+			delay(1);
+			FXOS_ReadSensorData(&fxosHandle, &sensorData);
+			dice_val = (dice_val
+					+ ((sensorData.accelXLSB & 15) ^ (sensorData.accelYLSB & 15)
+							^ (sensorData.accelZLSB & 15)) % 10) / 2;
+			display_num(dice_val);
 		}
+
+		dice_val = 0;
 	}
 }
