@@ -43,12 +43,17 @@
 #include "fsl_fxos.h"
 #include "fsl_i2c.h"
 
+#include "fsl_trng.h"
+
 /*******************************************************************************
  * Definitions
  ******************************************************************************/
 /* I2C source clock */
 #define ACCEL_I2C_CLK_SRC I2C3_CLK_SRC
 #define I2C_BAUDRATE 100000U
+
+/* Number of TRNG generated */
+#define TRNG_EXAMPLE_RANDOM_NUMBER 10
 
 /*******************************************************************************
  * Variables
@@ -83,6 +88,10 @@ int main(void) {
 	uint8_t array_addr_size = 0;
 	bool foundDevice = false;
 
+	trng_config_t trngConfig;
+	status_t status;
+	uint32_t data[TRNG_EXAMPLE_RANDOM_NUMBER];
+
 	i2cSourceClock = CLOCK_GetFreq(ACCEL_I2C_CLK_SRC);
 	fxosHandle.base = BOARD_ACCEL_I2C_BASEADDR;
 	fxosHandle.i2cHandle = &g_MasterHandle;
@@ -114,7 +123,7 @@ int main(void) {
 			break;
 		}
 		if ((i == (array_addr_size - 1)) && (!foundDevice)) {
-			PRINTF("\r\nDo not found sensor device\r\n");
+			PRINTF("\r\nAccel sensor not found\r\n");
 			while (1) {
 			};
 		}
@@ -126,7 +135,50 @@ int main(void) {
 	/* Init 7 Segment Display */
 	init_7seg();
 
-	PRINTF("Accelerometer Entropy Dice");
+	/* Initialize TRNG configuration structure to default.*/
+	/*
+	 * trngConfig.lock = TRNG_USER_CONFIG_DEFAULT_LOCK;
+	 * trngConfig.clockMode = kTRNG_ClockModeRingOscillator;
+	 * trngConfig.ringOscDiv = TRNG_USER_CONFIG_DEFAULT_OSC_DIV;
+	 * trngConfig.sampleMode = kTRNG_SampleModeRaw;
+	 * trngConfig.entropyDelay = TRNG_USER_CONFIG_DEFAULT_ENTROPY_DELAY;
+	 * trngConfig.sampleSize = TRNG_USER_CONFIG_DEFAULT_SAMPLE_SIZE;
+	 * trngConfig.sparseBitLimit = TRNG_USER_CONFIG_DEFAULT_SPARSE_BIT_LIMIT;
+	 * trngConfig.retryCount = TRNG_USER_CONFIG_DEFAULT_RETRY_COUNT;
+	 * trngConfig.longRunMaxLimit = TRNG_USER_CONFIG_DEFAULT_RUN_MAX_LIMIT;
+	 * trngConfig.monobitLimit.maximum = TRNG_USER_CONFIG_DEFAULT_MONOBIT_MAXIMUM;
+	 * trngConfig.monobitLimit.minimum = TRNG_USER_CONFIG_DEFAULT_MONOBIT_MINIMUM;
+	 * trngConfig.runBit1Limit.maximum = TRNG_USER_CONFIG_DEFAULT_RUNBIT1_MAXIMUM;
+	 * trngConfig.runBit1Limit.minimum = TRNG_USER_CONFIG_DEFAULT_RUNBIT1_MINIMUM;
+	 * trngConfig.runBit2Limit.maximum = TRNG_USER_CONFIG_DEFAULT_RUNBIT2_MAXIMUM;
+	 * trngConfig.runBit2Limit.minimum = TRNG_USER_CONFIG_DEFAULT_RUNBIT2_MINIMUM;
+	 * trngConfig.runBit3Limit.maximum = TRNG_USER_CONFIG_DEFAULT_RUNBIT3_MAXIMUM;
+	 * trngConfig.runBit3Limit.minimum = TRNG_USER_CONFIG_DEFAULT_RUNBIT3_MINIMUM;
+	 * trngConfig.runBit4Limit.maximum = TRNG_USER_CONFIG_DEFAULT_RUNBIT4_MAXIMUM;
+	 * trngConfig.runBit4Limit.minimum = TRNG_USER_CONFIG_DEFAULT_RUNBIT4_MINIMUM;
+	 * trngConfig.runBit5Limit.maximum = TRNG_USER_CONFIG_DEFAULT_RUNBIT5_MAXIMUM;
+	 * trngConfig.runBit5Limit.minimum = TRNG_USER_CONFIG_DEFAULT_RUNBIT5_MINIMUM;
+	 * trngConfig.runBit6PlusLimit.maximum = TRNG_USER_CONFIG_DEFAULT_RUNBIT6PLUS_MAXIMUM;
+	 * trngConfig.runBit6PlusLimit.minimum = TRNG_USER_CONFIG_DEFAULT_RUNBIT6PLUS_MINIMUM;
+	 * trngConfig.pokerLimit.maximum = TRNG_USER_CONFIG_DEFAULT_POKER_MAXIMUM;
+	 * trngConfig.pokerLimit.minimum = TRNG_USER_CONFIG_DEFAULT_POKER_MINIMUM;
+	 * trngConfig.frequencyCountLimit.maximum = TRNG_USER_CONFIG_DEFAULT_FREQUENCY_MAXIMUM;
+	 * trngConfig.frequencyCountLimit.minimum = TRNG_USER_CONFIG_DEFAULT_FREQUENCY_MINIMUM;
+	 */
+	TRNG_GetDefaultConfig(&trngConfig);
+	/* Set sample mode of the TRNG ring oscillator to Von Neumann, for better random data.*/
+	trngConfig.sampleMode = kTRNG_SampleModeVonNeumann;
+
+	/* Initialize TRNG */
+	status = TRNG_Init(TRNG0, &trngConfig);
+
+	if (kStatus_Success != status) {
+		PRINTF("\r\nTRNG not initialized\r\n");
+		while (1) {
+		};
+	}
+
+	PRINTF("Accelerometer + Ring Oscillator Entropy Dice");
 
 	for (;;) { /* Infinite loop to avoid leaving the main function */
 		/* Get new accelerometer data. */
@@ -162,5 +214,18 @@ int main(void) {
 		}
 
 		dice_val = 0;
+
+		PRINTF("Generate %d random numbers: \r\n", TRNG_EXAMPLE_RANDOM_NUMBER);
+
+		/* Get Random data*/
+		status = TRNG_GetRandomData(TRNG0, data, sizeof(data));
+		if (status == kStatus_Success) {
+			/* Print data*/
+			for (i = 0; i < TRNG_EXAMPLE_RANDOM_NUMBER; i++) {
+				PRINTF("Random[%d] = 0x%X\r\n", i, data[i]);
+			}
+		} else {
+			PRINTF("TRNG failed!\r\n");
+		}
 	}
 }
