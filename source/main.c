@@ -169,7 +169,7 @@ int main(void) {
 	/* Set sample mode of the TRNG ring oscillator to Von Neumann, for better random data.*/
 	trngConfig.sampleMode = kTRNG_SampleModeVonNeumann;
 	/* Reduce Entropy delay for faster generation */
-	trngConfig.entropyDelay = 640;
+	trngConfig.entropyDelay = 256;
 
 	/* Initialize TRNG */
 	status = TRNG_Init(TRNG0, &trngConfig);
@@ -199,20 +199,9 @@ int main(void) {
 
 		PRINTF("Generate %d random numbers: \r\n", TRNG_EXAMPLE_RANDOM_NUMBER);
 
-		/* Get Random data*/
-		status = TRNG_GetRandomData(TRNG0, data, sizeof(data));
-		if (status == kStatus_Success) {
-			/* Print data*/
-			for (i = 0; i < TRNG_EXAMPLE_RANDOM_NUMBER; i++) {
-				PRINTF("Random[%d] = 0x%X\r\n", i, data[i]);
-			}
-		} else {
-			PRINTF("TRNG failed!\r\n");
-		}
-
 		/* Detect horizontal shake and display a value */
 		if (abs(xData) > 2000 || abs(yData) > 2000) {
-			clear_display();
+
 
 			//TODO: Add reasonable derivation of RNG for RAW Accel data
 			//Refer:http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=7109113
@@ -225,6 +214,19 @@ int main(void) {
 			dice_val = (dice_val
 					+ ((sensorData.accelXLSB & 15) ^ (sensorData.accelYLSB & 15)
 							^ (sensorData.accelZLSB & 15)) % 10) / 2;
+
+			/* Get Random data*/
+			status = TRNG_GetRandomData(TRNG0, data, sizeof(data));
+			if (status == kStatus_Success) {
+				/* Print data*/
+				for (i = 0; i < TRNG_EXAMPLE_RANDOM_NUMBER; i++) {
+					PRINTF("Random[%d] = 0x%X\r\n", i, data[i]);
+				}
+			} else {
+				PRINTF("TRNG failed!\r\n");
+			}
+			clear_display();
+
 			// Combine TRNG data from above
 			dice_val = (dice_val ^ data[0]) % 10;
 
