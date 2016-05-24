@@ -53,7 +53,7 @@
 #define I2C_BAUDRATE 100000U
 
 /* Number of TRNG generated */
-#define TRNG_EXAMPLE_RANDOM_NUMBER 10
+#define TRNG_EXAMPLE_RANDOM_NUMBER 1
 
 /*******************************************************************************
  * Variables
@@ -168,6 +168,8 @@ int main(void) {
 	TRNG_GetDefaultConfig(&trngConfig);
 	/* Set sample mode of the TRNG ring oscillator to Von Neumann, for better random data.*/
 	trngConfig.sampleMode = kTRNG_SampleModeVonNeumann;
+	/* Reduce Entropy delay for faster generation */
+	trngConfig.entropyDelay = 640;
 
 	/* Initialize TRNG */
 	status = TRNG_Init(TRNG0, &trngConfig);
@@ -195,6 +197,19 @@ int main(void) {
 		/* Print out the raw accelerometer data. */
 		PRINTF("x= %d y = %d z = %d\r\n", xData, yData, zData);
 
+		PRINTF("Generate %d random numbers: \r\n", TRNG_EXAMPLE_RANDOM_NUMBER);
+
+		/* Get Random data*/
+		status = TRNG_GetRandomData(TRNG0, data, sizeof(data));
+		if (status == kStatus_Success) {
+			/* Print data*/
+			for (i = 0; i < TRNG_EXAMPLE_RANDOM_NUMBER; i++) {
+				PRINTF("Random[%d] = 0x%X\r\n", i, data[i]);
+			}
+		} else {
+			PRINTF("TRNG failed!\r\n");
+		}
+
 		/* Detect horizontal shake and display a value */
 		if (abs(xData) > 2000 || abs(yData) > 2000) {
 			clear_display();
@@ -210,22 +225,11 @@ int main(void) {
 			dice_val = (dice_val
 					+ ((sensorData.accelXLSB & 15) ^ (sensorData.accelYLSB & 15)
 							^ (sensorData.accelZLSB & 15)) % 10) / 2;
+			// Combine TRNG data from above
+			dice_val = (dice_val ^ data[0]) % 10;
+
 			display_num(dice_val);
 		}
-
 		dice_val = 0;
-
-		PRINTF("Generate %d random numbers: \r\n", TRNG_EXAMPLE_RANDOM_NUMBER);
-
-		/* Get Random data*/
-		status = TRNG_GetRandomData(TRNG0, data, sizeof(data));
-		if (status == kStatus_Success) {
-			/* Print data*/
-			for (i = 0; i < TRNG_EXAMPLE_RANDOM_NUMBER; i++) {
-				PRINTF("Random[%d] = 0x%X\r\n", i, data[i]);
-			}
-		} else {
-			PRINTF("TRNG failed!\r\n");
-		}
 	}
 }
